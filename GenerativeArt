@@ -1,0 +1,108 @@
+import javax.swing.*;
+import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+
+public class ArteGenerativoBucleContinuoConWhile extends JPanel {
+
+    private static final int WIDTH = 800;
+    private static final int HEIGHT = 800;
+    private static final int NUM_SHAPES = 900;
+    private static final int ANIMATION_SPEED = 40; // Velocidad de animación
+    private static final double PI2 = Math.PI * 2.0;
+
+    private List<AnimatedShape> shapes;
+
+    public ArteGenerativoBucleContinuoConWhile() {
+        shapes = new ArrayList<>();
+        Random random = new Random();
+
+        for (int i = 0; i < NUM_SHAPES; i++) {
+            int x = random.nextInt(WIDTH);
+            int y = random.nextInt(HEIGHT);
+            double startTime = random.nextDouble() * PI2; // Fase inicial aleatoria
+            int size = random.nextInt(50) + 20; // Tamaño inicial entre 20 y 70
+            Color color = new Color(random.nextInt(256), random.nextInt(256), random.nextInt(256));
+            shapes.add(new AnimatedShape(x, y, startTime, size, color));
+        }
+
+        setPreferredSize(new Dimension(WIDTH, HEIGHT));
+
+        // Crear un hilo para la animación
+        Thread animationThread = new Thread(() -> {
+            while (true) {
+                for (AnimatedShape shape : shapes) {
+                    shape.updateSize(); // Actualizar tamaño de cada forma
+                }
+                repaint(); // Volver a dibujar
+                try {
+                    Thread.sleep(ANIMATION_SPEED);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        animationThread.start();
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        for (AnimatedShape shape : shapes) {
+            shape.draw(g); // Dibujar cada forma
+        }
+    }
+
+    private class AnimatedShape {
+        private int x, y, originalSize;
+        private double startTime;
+        private Color color;
+        private boolean growing = true;
+
+        public AnimatedShape(int x, int y, double startTime, int size, Color color) {
+            this.x = x;
+            this.y = y;
+            this.startTime = startTime;
+            this.originalSize = size;
+            this.color = color;
+        }
+
+        public void updateSize() {
+            double currentTime = System.currentTimeMillis() * 0.001;
+            double timeElapsed = currentTime - startTime;
+            double scaleFactor = 0.5 + 0.5 * Math.sin(timeElapsed); // Escala variable
+            int newSize = (int) (originalSize * scaleFactor);
+
+            if (newSize <= originalSize / 4) { // Achicar hasta 25% del tamaño original
+                growing = true;
+            } else if (newSize >= originalSize * 1.5) { // Crecer hasta 150% del tamaño original
+                growing = false;
+            }
+
+            if (growing==true) {
+                newSize = newSize+9;
+            } else if(growing==false) {
+                newSize =newSize-2;
+            }
+
+            x -= (newSize - originalSize) / 2;
+            y -= (newSize - originalSize) / 2;
+            originalSize = newSize;
+        }
+
+        public void draw(Graphics g) {
+            g.setColor(color);
+            g.fillOval(x, y, originalSize, originalSize);
+        }
+    }
+
+    public static void main(String[] args) {
+        JFrame frame = new JFrame("Arte Generativo Bucle Continuo con While");
+        ArteGenerativoBucleContinuoConWhile generativeArt = new ArteGenerativoBucleContinuoConWhile();
+        frame.add(generativeArt);
+        frame.pack();
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setVisible(true);
+    }
+}
